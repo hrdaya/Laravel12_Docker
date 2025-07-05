@@ -30,3 +30,7 @@
 * SFTP
 * Trailing Spaces
 * YAML
+
+### プロジェクト共通のVSCodeの設定
+
+`.vscode/settings.json` にプロジェクト共通のVSCodeの設定を記載しています。
