@@ -1,0 +1,24 @@
+{
+    "recommendations": [
+        "mikestead.dotenv",
+        "emilast.logfilehighlighter",
+        "ms-vscode-remote.vscode-remote-extensionpack",
+        "wmaurer.change-case",
+        "streetsidesoftware.code-spell-checker",
+        "ms-azuretools.vscode-containers",
+        "docker.docker",
+        "editorconfig.editorconfig",
+        "lokalise.i18n-ally",
+        "oderwat.indent-rainbow",
+        "laravel.vscode-laravel",
+        "junstyle.php-cs-fixer",
+        "xdebug.php-debug",
+        "bmewburn.vscode-intelephense-client",
+        "mehedidracula.php-namespace-resolver",
+        "breezelin.phpstan",
+        "humao.rest-client",
+        "natizyskunk.sftp",
+        "shardulm94.trailing-spaces",
+        "redhat.vscode-yaml"
+    ]
+}
