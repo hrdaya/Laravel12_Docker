@@ -34,3 +34,7 @@
 ### プロジェクト共通のVSCodeの設定
 
 `.vscode/settings.json` にプロジェクト共通のVSCodeの設定を記載しています。
+
+### デバッグ用の設定
+
+`.vscode/launch.json` にデバッグ用の設定を記載しています。
