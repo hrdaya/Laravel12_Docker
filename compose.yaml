@@ -1,0 +1,180 @@
+services:
+    php:
+        build:
+            context: .
+            dockerfile: ./docker/php/Dockerfile
+            target: development
+            args:
+                DOCKER_PHP_DIR: ./docker/php
+                APP_BASE_PATH: /var/www/html
+                WWWGID: ${WWGGID:-1000} # ホストのグループID
+                CONTAINER_APP_USER: ${CONTAINER_APP_USER:-dockeruser} # ユーザー名
+        ports:
+            - "${APP_PORT:-80}:80"
+            - '${VITE_PORT:-5173}:5173'
+        environment:
+            TZ: '${APP_TIMEZONE:-UTC}'
+            XDEBUG_MODE: '${XDEBUG_MODE:-off}'
+            WWWUID: ${WWWUID:-1000} # ホストのユーザーID
+        networks:
+            - dc
+        volumes:
+            - .:/var/www/html # ソースコード（development）
+            - ./docker/php/000-default.conf:/etc/apache2/sites-enabled/000-default.conf:ro # Apacheの設定ファイル（ro: 読み込み専用）
+            - ./docker/php/zzz-development.ini:/usr/local/etc/php/conf.d/zzz-development.ini:ro # PHP設定ファイル（ro: 読み込み専用）
+        healthcheck:
+            test: ['CMD', 'lsof', '-U']
+            start_period: '10s'
+            start_interval: 1s
+            interval: '5s'
+            timeout: 5s
+            retries: 5
+        depends_on:
+            mysql_read:
+                condition: service_healthy # mysql_readコンテナの構築が完了(healthcheckに合格する)まで待つ
+            valkey:
+                condition: service_healthy # valkeyコンテナの構築が完了(healthcheckに合格する)まで待つ
+            minio:
+                condition: service_healthy # minioコンテナの構築が完了(healthcheckに合格する)まで待つ
+    mysql_write:
+        build:
+            context: .
+            dockerfile: ./docker/mysql/Dockerfile
+        ports:
+            - '${DB_WRITE_PORT:-3306}:3306'
+        environment:
+            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD:-password}'
+            MYSQL_ROOT_HOST: '%'
+            MYSQL_DATABASE: '${DB_DATABASE:-laravel}'
+            MYSQL_USER: '${DB_USERNAME:-sail}'
+            MYSQL_PASSWORD: '${DB_PASSWORD:-password}'
+            MYSQL_ALLOW_EMPTY_PASSWORD: 1
+            TEST_DATABASE: '${DB_TEST_DATABASE:-testing}'
+            TZ: '${APP_TIMEZONE:-UTC}'
+        networks:
+            - dc
+        volumes:
+            - ./docker/mysql/write/conf.d/my.cnf:/etc/mysql/conf.d/my.cnf:ro # 設定ファイル（ro: 読み込み専用）
+            - ./docker/mysql/write/initdb.d:/docker-entrypoint-initdb.d:ro # コンテナ初回起動時に自動実行（ro: 読み込み専用）
+            - mysql_write-data:/var/lib/mysql # データ
+        healthcheck:
+            test:
+                ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-proot']
+            start_period: '10s'
+            start_interval: 1s
+            interval: '5s'
+            timeout: 10s
+            retries: 5
+    mysql_read:
+        build:
+            context: .
+            dockerfile: ./docker/mysql/Dockerfile
+        ports:
+            - '${DB_READ_PORT:-3307}:3306'
+        environment:
+            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD:-password}'
+            MYSQL_ROOT_HOST: '%'
+            MYSQL_DATABASE: '${DB_DATABASE:-laravel}'
+            MYSQL_USER: '${DB_USERNAME:-sail}'
+            MYSQL_PASSWORD: '${DB_PASSWORD:-password}'
+            MYSQL_ALLOW_EMPTY_PASSWORD: 1
+            WRITE_HOST: 'mysql_write'
+            WRITE_PORT: '${DB_WRITE_PORT:-3306}'
+            TEST_DATABASE: '${DB_TEST_DATABASE:-testing}'
+            TZ: '${APP_TIMEZONE:-UTC}'
+        networks:
+            - dc
+        volumes:
+            - ./docker/mysql/read/conf.d/my.cnf:/etc/mysql/conf.d/my.cnf:ro # 設定ファイル（ro: 読み込み専用）
+            - ./docker/mysql/read/initdb.d:/docker-entrypoint-initdb.d:ro # コンテナ初回起動時に自動実行（ro: 読み込み専用）
+            - mysql_read-data:/var/lib/mysql # データ
+        depends_on:
+            mysql_write:
+                condition: service_healthy # mysql_writeコンテナの構築が完了(healthcheckに合格する)まで待つ
+        healthcheck:
+            test:
+                ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-proot']
+            start_period: '10s'
+            start_interval: 1s
+            interval: '5s'
+            timeout: 10s
+            retries: 5
+    valkey:
+        build:
+            context: .
+            dockerfile: ./docker/valkey/Dockerfile
+        ports:
+            - '${REDIS_PORT:-6379}:6379'
+        networks:
+            - dc
+        volumes:
+            - 'valkey-data:/var/lib/valkey'
+        healthcheck:
+            test:
+                ['CMD', 'valkey-cli', 'ping']
+            interval: '1s'
+            start_period: '5s'
+            timeout: 5s
+            retries: 3
+    redisinsight:
+        image: redislabs/redisinsight:latest
+        ports:
+            - '${REDIS_HTTP_PORT:-5540}:5540'
+        depends_on:
+            valkey:
+                condition: service_healthy # valkeyコンテナの構築が完了(healthcheckに合格する)まで待つ
+        networks:
+            - dc
+    minio:
+        image: 'minio/minio:latest'
+        ports:
+            - '${FORWARD_MINIO_PORT:-9000}:9000'
+            - '${FORWARD_MINIO_CONSOLE_PORT:-8900}:8900'
+        environment:
+            MINIO_ROOT_USER: '${AWS_ACCESS_KEY_ID:-minio_root_user}'
+            MINIO_ROOT_PASSWORD: '${AWS_SECRET_ACCESS_KEY:-minio_root_password}'
+        networks:
+            - dc
+        volumes:
+            - 'minio-data:/data/minio'
+        command: "minio server /data/minio --address :${FORWARD_MINIO_PORT:-9000} --console-address :${FORWARD_MINIO_CONSOLE_PORT:-8900}"
+        healthcheck:
+            test:
+                ['CMD', 'mc', 'ready', 'local']
+            start_period: '10s'
+            start_interval: 1s
+            interval: '5s'
+            timeout: 5s
+            retries: 3
+    create_bucket:
+        image: 'minio/mc:latest'
+        depends_on:
+            minio:
+                condition: service_healthy # minioコンテナの構築が完了(healthcheckに合格する)まで待つ
+        entrypoint: >
+            sh -c "
+            mc alias set local http://minio:${FORWARD_MINIO_PORT:-9000} ${AWS_ACCESS_KEY_ID:-minio_root_user} ${AWS_SECRET_ACCESS_KEY:-minio_root_password} &&
+            mc mb local/${AWS_BUCKET:-assets} &&
+            mc policy set public local/${AWS_BUCKET:-assets} &&
+            exit 0"
+        networks:
+            - dc
+    mailpit:
+        image: 'axllent/mailpit:latest'
+        ports:
+            - '${FORWARD_MAILPIT_PORT:-1025}:1025'
+            - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
+        networks:
+            - dc
+networks:
+    dc:
+        driver: bridge
+volumes:
+    mysql_read-data:
+        driver: local
+    mysql_write-data:
+        driver: local
+    valkey-data:
+        driver: local
+    minio-data:
+        driver: local

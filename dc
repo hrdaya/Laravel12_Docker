@@ -1,0 +1,306 @@
+#!/usr/bin/env bash
+
+# vessel改
+# https://github.com/shipping-docker/vessel/blob/master/docker-files/vessel
+# Laravelのsailも参考にしながら作成
+
+# コンソール出力の色設定
+ESC_SEQ="\x1b["
+COL_RESET=${ESC_SEQ}"39;49;00m"
+COL_YELLOW=${ESC_SEQ}"0;33m"
+COL_BOLD_YELLOW=${ESC_SEQ}"33;01m"
+COL_GREEN=${ESC_SEQ}"0;32m"
+COL_MAGENTA=${ESC_SEQ}"0;35m"
+
+# コンテナの名称
+CONTAINER_APP="php"
+CONTAINER_MYSQL="mysql_write"
+
+# .envファイルの場所
+ENV_FILE=".env"
+
+# .envファイルが存在する場合は内容を反映
+if [ ! -f "$ENV_FILE" ]; then
+    echo "ファイルが存在しません: ${ENV_FILE}"
+    echo ".env.exampleから.envファイルを作成してください。"
+    echo "例: cp .env.example .env"
+    exit 1
+fi
+
+source ${ENV_FILE}
+
+# MySQLの「docker-entrypoint-initdb.d」のフォルダ内の「.sh」ファイルに実行権限を付与しておく
+chmod a+x docker/mysql/write/initdb.d/*.sh
+chmod a+x docker/mysql/read/initdb.d/*.sh
+
+# PHPコンテナのユーザ名
+export CONTAINER_APP_USER="dockeruser"
+
+# 実行しているユーザIDとグループIDを取得
+export WWWUID=${UID:-$(id -u)}
+export WWWGID=${GID:-$(id -g)}
+
+# OSの種別取得
+UNAMEOUT="$(uname -s)"
+case "${UNAMEOUT}" in
+    Linux*)  MACHINE="linux";;
+    Darwin*) MACHINE="mac";;
+    *)       MACHINE="UNKNOWN";;
+esac
+
+if [ "$MACHINE" == "UNKNOWN" ]; then
+    echo "サポート外のOSです。 [${UNAMEOUT}] macOS、Windows(WSL2)でご使用ください。"
+fi
+
+# docker-composeコマンドの設定(`docker-compose`と`docker compose`があるので揃える)
+if ! [ -x "$(command -v docker-compose)" ]; then
+    shopt -s expand_aliases
+    alias docker-compose='docker compose'
+fi
+
+# コンテナが起動されていないとき
+function container_is_not_running {
+    printf "${COL_BOLD_YELLOW}コンテナが起動していません。${COL_RESET}\n"
+    printf "次のコマンドを実行してコンテナを起動してください。: ${COL_GREEN}bash ./dc up${COL_RESET}\n"
+
+    exit 1
+}
+
+# リンクを表示
+function showLink() {
+    printf "${COL_MAGENTA}Links:${COL_RESET}\n"
+    printf "${COL_GREEN}  Web Server  :${COL_RESET} ${APP_URL}:${APP_PORT:-80}\n"
+    printf "${COL_GREEN}  mailpit     :${COL_RESET} ${APP_URL}:${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}\n"
+    printf "${COL_GREEN}  RedisInsight:${COL_RESET} ${APP_URL}:${REDIS_HTTP_PORT:-5540}\n"
+    printf "${COL_GREEN}  minio       :${COL_RESET} ${APP_URL}:${FORWARD_MINIO_CONSOLE_PORT:-8900}\n"
+}
+
+# ヘルプを表示
+function showHelp() {
+    commands="${COL_MAGENTA}Commands:\n${COL_RESET}"
+    commands="$commands ${COL_GREEN}  bash ./dc -h${COL_RESET}                ヘルプの表示\n"
+    commands="$commands ${COL_GREEN}  bash ./dc help${COL_RESET}              ヘルプの表示\n"
+    commands="$commands ${COL_GREEN}  bash ./dc links${COL_RESET}             各サービスのLINKを表示\n"
+    commands="$commands ${COL_GREEN}  bash ./dc exec${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}    docker compose execの実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc up${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}      コンテナの起動（オプション --build）\n"
+    commands="$commands ${COL_GREEN}  bash ./dc stop${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}    コンテナの停止\n"
+    commands="$commands ${COL_GREEN}  bash ./dc restart${COL_RESET} ${COL_YELLOW}<options>${COL_RESET} コンテナの再起動\n"
+    commands="$commands ${COL_GREEN}  bash ./dc down${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}    Docker Composeで作ったコンテナを停止し、コンテナとネットワークを削除\n"
+    commands="$commands ${COL_GREEN}  bash ./dc destroy${COL_RESET} ${COL_YELLOW}<options>${COL_RESET} Docker Compose で作ったコンテナ、イメージ、ボリューム、ネットワークを一括完全消去\n"
+    commands="$commands ${COL_GREEN}  bash ./dc build${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}   Dockerイメージの構築（オプション --no-cache）\n"
+    commands="$commands ${COL_GREEN}  bash ./dc php${COL_RESET} ${COL_YELLOW}<file>${COL_RESET}        コンテナ内で PHP を実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc composer${COL_RESET} ${COL_YELLOW}<cmd>${COL_RESET}    コンテナ内で Composer コマンドを実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc artisan${COL_RESET} ${COL_YELLOW}<cmd>${COL_RESET}     コンテナ内で artisan コマンドを実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc tinker${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}  コンテナ内で artisan tinker コマンドを実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc test${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}    コンテナ内で artisan test コマンドを実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc pint${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}    コンテナ内で ./vendor/bin/pint コマンドを実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc stan${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}    コンテナ内で ./vendor/bin/phpstan analyse コマンドを実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc npm${COL_RESET} ${COL_YELLOW}<cmd>${COL_RESET}         コンテナ内で npm コマンド実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc shell${COL_RESET}             WEBコンテナ内に shell ログイン\n"
+    commands="$commands ${COL_GREEN}  bash ./dc root-shell${COL_RESET}        WEBコンテナ内に root ユーザーで shell ログイン\n"
+    commands="$commands ${COL_GREEN}  bash ./dc mysql${COL_RESET}             MySQLコンテナの MySQL にログイン\n"
+
+    printf "\n"
+    printf "$commands\n"
+
+    showLink
+}
+
+# Dockerのプロセスが実行されているか確認
+PSRESULT="$(docker-compose ps -q)"
+if [ -n "$PSRESULT" ]; then
+    EXEC="yes"
+else
+    EXEC="no"
+fi
+
+# If we pass any arguments...
+if [ $# -gt 0 ]; then
+    # ヘルプの表示
+    if [ "$1" == "--help" ] || [ "$1" == "-h" ] || [ "$1" == "help" ]; then
+        showHelp
+
+    # リンクの表示
+    elif [ "$1" == "links" ]; then
+        printf "\n"
+        showLink
+
+    # docker compose の実行
+    elif [ "$1" == "compose" ]; then
+        shift 1
+        docker-compose "$@"
+
+    # docker compose execの実行
+    elif [ "$1" == "exec" ]; then
+        shift 1
+        docker-compose exec "$@"
+
+    # コンテナの起動（オプション --build）
+    elif [ "$1" == "up" ]; then
+        shift 1
+        docker-compose up "$@"
+
+    # コンテナの停止
+    elif [ "$1" == "stop" ]; then
+        shift 1
+        docker-compose stop "$@"
+
+    # コンテナの再起動
+    elif [ "$1" == "restart" ]; then
+        shift 1
+        docker-compose restart "$@"
+
+    # Docker Composeで作ったコンテナを停止し、コンテナとネットワークを削除
+    elif [ "$1" == "down" ]; then
+        shift 1
+        docker-compose down "$@"
+
+    # Docker Composeで作ったコンテナ、イメージ、ボリューム、ネットワークを一括完全消去
+    # https://qiita.com/suin/items/19d65e191b96a0079417
+    elif [ "$1" == "destroy" ]; then
+        docker-compose down --rmi all --volumes --remove-orphans
+
+    # Dockerイメージの構築（オプション --no-cache）
+    elif [ "$1" == "build" ]; then
+        shift 1
+        docker-compose build "$@"
+
+    # PHP
+    elif [ "$1" == "php" ]; then
+        shift 1
+        if [ "$EXEC" == "yes" ]; then
+            docker-compose exec \
+                -u "$CONTAINER_APP_USER" \
+                "$CONTAINER_APP" \
+                php "$@"
+        else
+            container_is_not_running
+        fi
+
+    # Composer
+    elif [ "$1" == "composer" ]; then
+        shift 1
+        if [ "$EXEC" == "yes" ]; then
+            docker-compose exec \
+                -u "$CONTAINER_APP_USER" \
+                "$CONTAINER_APP" \
+                composer "$@"
+        else
+            container_is_not_running
+        fi
+
+    # artisan
+    elif [ "$1" == "artisan" ]; then
+        shift 1
+        if [ "$EXEC" == "yes" ]; then
+            docker-compose exec \
+                -u "$CONTAINER_APP_USER" \
+                "$CONTAINER_APP" \
+                php artisan "$@"
+        else
+            container_is_not_running
+        fi
+
+    # tinker
+    elif [ "$1" == "tinker" ]; then
+        shift 1
+        if [ "$EXEC" == "yes" ]; then
+            docker-compose exec \
+                -u "$CONTAINER_APP_USER" \
+                "$CONTAINER_APP" \
+                php artisan tinker
+        else
+            container_is_not_running
+        fi
+
+    # test
+    elif [ "$1" == "test" ]; then
+        shift 1
+        if [ "$EXEC" == "yes" ]; then
+            docker-compose exec \
+                -u "$CONTAINER_APP_USER" \
+                "$CONTAINER_APP" \
+                php artisan test "$@"
+        else
+            container_is_not_running
+        fi
+
+    # pint
+    elif [ "$1" == "pint" ]; then
+        shift 1
+        if [ "$EXEC" == "yes" ]; then
+            docker-compose exec \
+                -u "$CONTAINER_APP_USER" \
+                "$CONTAINER_APP" \
+                ./vendor/bin/pint "$@"
+        else
+            container_is_not_running
+        fi
+
+    # stan
+    elif [ "$1" == "stan" ]; then
+        shift 1
+        if [ "$EXEC" == "yes" ]; then
+            docker-compose exec \
+                -u "$CONTAINER_APP_USER" \
+                "$CONTAINER_APP" \
+                ./vendor/bin/phpstan analyse "$@"
+        else
+            container_is_not_running
+        fi
+
+    # NPM
+    elif [ "$1" == "npm" ]; then
+        shift 1
+        if [ "$EXEC" == "yes" ]; then
+            docker-compose exec \
+                -u "$CONTAINER_APP_USER" \
+                "$CONTAINER_APP" \
+                npm "$@"
+        else
+            container_is_not_running
+        fi
+
+    # WEBコンテナにshellログイン
+    elif [ "$1" == "shell" ]; then
+        shift 1
+        if [ "$EXEC" == "yes" ]; then
+            docker-compose exec \
+                -u "$CONTAINER_APP_USER" \
+                "$CONTAINER_APP" \
+                bash "$@"
+        else
+            container_is_not_running
+        fi
+
+    # WEBコンテナにrootユーザーでshellログイン
+    elif [ "$1" == "root-shell" ]; then
+        shift 1
+        if [ "$EXEC" == "yes" ]; then
+            docker-compose exec \
+                -u root \
+                "$CONTAINER_APP" \
+                bash "$@"
+        else
+            container_is_not_running
+        fi
+
+    # MySQL CLI
+    elif [ "$1" == "mysql" ]; then
+        shift 1
+        if [ "$EXEC" == "yes" ]; then
+            docker-compose exec \
+                "$CONTAINER_MYSQL" \
+                bash -c "MYSQL_PWD=${DB_PASSWORD} mysql -u ${DB_USERNAME} ${DB_DATABASE}"
+        else
+            container_is_not_running
+        fi
+
+    # Else, pass-thru args to docker-compose
+    else
+        docker-compose "$@"
+    fi
+else
+    # Use the docker-compose ps command if nothing else passed through
+    docker-compose ps
+fi
