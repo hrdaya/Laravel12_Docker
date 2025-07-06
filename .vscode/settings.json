@@ -27,4 +27,5 @@
         "editor.defaultFormatter": "vscode.json-language-features"
     },
     "php-cs-fixer.ignorePHPVersion": true,
+    "i18n-ally.localesPaths": [],
 }
