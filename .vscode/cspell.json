@@ -1,0 +1,36 @@
+{
+    "words": [
+        "flysystem",
+        "Intelephense",
+        "Laravel",
+        "MAILPIT",
+        "phpredis",
+        "Usernam",
+        "valkey",
+        "VITE"
+    ],
+    "ignorePaths": [
+        "composer.*",
+        "docker-compose.*",
+        "compose.*",
+        ".git*",
+        "Dockerfile",
+        "Makefile",
+        "phpunit.*",
+        "phpstan.*",
+        "php-cs-fixer.*",
+        "dc",
+        "/vendor/**",
+        "/node_modules/**",
+        "/storage/**",
+        "/public/**",
+        "/bootstrap/**",
+        "/tests/**",
+        "/database/**",
+        "/docker/**",
+        "/resources/**",
+        "/lang/**",
+        "/config/**",
+        "/routes/**"
+    ]
+}
