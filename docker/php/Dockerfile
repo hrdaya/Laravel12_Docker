@@ -82,6 +82,9 @@ RUN groupadd --force -g ${WWWGID} ${CONTAINER_APP_USER} \
 ENV APACHE_RUN_USER=${CONTAINER_APP_USER}
 ENV APACHE_RUN_GROUP=${CONTAINER_APP_USER}
 
+# ApacheのProxyモジュールの有効化
+RUN a2enmod proxy proxy_http
+
 # 開発用のphp.iniの名前を変更
 RUN mv ${PHP_INI_DIR}/php.ini-development ${PHP_INI_DIR}/php.ini
 

@@ -155,7 +155,7 @@ services:
             sh -c "
             mc alias set local http://minio:${FORWARD_MINIO_PORT:-9000} ${AWS_ACCESS_KEY_ID:-minio_root_user} ${AWS_SECRET_ACCESS_KEY:-minio_root_password} &&
             mc mb local/${AWS_BUCKET:-assets} &&
-            mc policy set public local/${AWS_BUCKET:-assets} &&
+            mc anonymous set public local/${AWS_BUCKET:-assets} &&
             exit 0"
         networks:
             - dc
