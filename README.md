@@ -118,3 +118,32 @@ S3互換のMinIOを使用してアップロードした画像の確認を行う�
 
 * Usernam: `.env` の `AWS_ACCESS_KEY_ID` の値
 * Password: `.env` の `AWS_SECRET_ACCESS_KEY` の値
+
+## コードの品質担保
+
+コードの品質を担保するためにRector、Larastan、Laravel Pintを導入しています。
+
+手動でローカルで実行することもできますが、CIでそれぞれ実行し、指摘やコードの変更がある場合にはエラーとするのが良いでしょう。
+
+### 実行順
+
+実行する順番は
+
+1. Rector
+2. Larastan
+3. Laravel Pint
+
+の順番に実行してください。
+
+### ローカルでの実行コマンド
+
+```sh
+# Rector
+bash ./dc rector
+
+# Larastan
+bash ./dc stan
+
+# Laravel Pint
+bash ./dc pint
+```

@@ -3,6 +3,7 @@
         "ARRAYACCESS",
         "flysystem",
         "Intelephense",
+        "Larastan",
         "Laravel",
         "MAILPIT",
         "phpdoc",
