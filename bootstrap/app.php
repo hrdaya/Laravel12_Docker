@@ -13,6 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // グローバルミドルウェアを追加
+        $middleware->append(\App\Http\Middleware\ResponseHeader::class);
+
         // IP制限ミドルウェアを追加
         $middleware->appendToGroup('web', \App\Http\Middleware\IpRestriction::class);
         $middleware->appendToGroup('api', \App\Http\Middleware\IpRestriction::class);

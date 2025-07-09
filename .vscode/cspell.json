@@ -6,8 +6,10 @@
         "Larastan",
         "Laravel",
         "MAILPIT",
+        "nosniff",
         "phpdoc",
         "phpredis",
+        "SAMEORIGIN",
         "Usernam",
         "valkey",
         "VITE"
