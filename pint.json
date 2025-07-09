@@ -1,0 +1,14 @@
+{
+    "preset": "laravel",
+    "cache-file": ".pint.cache",
+    "exclude": [
+        "database/migrations"
+    ],
+    "rules": {
+        "declare_parentheses": true,
+        "declare_strict_types": true,
+        "new_with_braces": true,
+        "phpdoc_separation": true,
+        "simplified_if_return": true
+    }
+}
