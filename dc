@@ -78,27 +78,29 @@ function showLink() {
 # ヘルプを表示
 function showHelp() {
     commands="${COL_MAGENTA}Commands:\n${COL_RESET}"
-    commands="$commands ${COL_GREEN}  bash ./dc -h${COL_RESET}                ヘルプの表示\n"
-    commands="$commands ${COL_GREEN}  bash ./dc help${COL_RESET}              ヘルプの表示\n"
-    commands="$commands ${COL_GREEN}  bash ./dc links${COL_RESET}             各サービスのLINKを表示\n"
-    commands="$commands ${COL_GREEN}  bash ./dc exec${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}    docker compose execの実行\n"
-    commands="$commands ${COL_GREEN}  bash ./dc up${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}      コンテナの起動（オプション --build）\n"
-    commands="$commands ${COL_GREEN}  bash ./dc stop${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}    コンテナの停止\n"
-    commands="$commands ${COL_GREEN}  bash ./dc restart${COL_RESET} ${COL_YELLOW}<options>${COL_RESET} コンテナの再起動\n"
-    commands="$commands ${COL_GREEN}  bash ./dc down${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}    Docker Composeで作ったコンテナを停止し、コンテナとネットワークを削除\n"
-    commands="$commands ${COL_GREEN}  bash ./dc destroy${COL_RESET} ${COL_YELLOW}<options>${COL_RESET} Docker Compose で作ったコンテナ、イメージ、ボリューム、ネットワークを一括完全消去\n"
-    commands="$commands ${COL_GREEN}  bash ./dc build${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}   Dockerイメージの構築（オプション --no-cache）\n"
-    commands="$commands ${COL_GREEN}  bash ./dc php${COL_RESET} ${COL_YELLOW}<file>${COL_RESET}        コンテナ内で PHP を実行\n"
-    commands="$commands ${COL_GREEN}  bash ./dc composer${COL_RESET} ${COL_YELLOW}<cmd>${COL_RESET}    コンテナ内で Composer コマンドを実行\n"
-    commands="$commands ${COL_GREEN}  bash ./dc artisan${COL_RESET} ${COL_YELLOW}<cmd>${COL_RESET}     コンテナ内で artisan コマンドを実行\n"
-    commands="$commands ${COL_GREEN}  bash ./dc tinker${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}  コンテナ内で artisan tinker コマンドを実行\n"
-    commands="$commands ${COL_GREEN}  bash ./dc test${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}    コンテナ内で artisan test コマンドを実行\n"
-    commands="$commands ${COL_GREEN}  bash ./dc pint${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}    コンテナ内で ./vendor/bin/pint コマンドを実行\n"
-    commands="$commands ${COL_GREEN}  bash ./dc stan${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}    コンテナ内で ./vendor/bin/phpstan analyse コマンドを実行\n"
-    commands="$commands ${COL_GREEN}  bash ./dc npm${COL_RESET} ${COL_YELLOW}<cmd>${COL_RESET}         コンテナ内で npm コマンド実行\n"
-    commands="$commands ${COL_GREEN}  bash ./dc shell${COL_RESET}             WEBコンテナ内に shell ログイン\n"
-    commands="$commands ${COL_GREEN}  bash ./dc root-shell${COL_RESET}        WEBコンテナ内に root ユーザーで shell ログイン\n"
-    commands="$commands ${COL_GREEN}  bash ./dc mysql${COL_RESET}             MySQLコンテナの MySQL にログイン\n"
+    commands="$commands ${COL_GREEN}  bash ./dc -h${COL_RESET}                       ヘルプの表示\n"
+    commands="$commands ${COL_GREEN}  bash ./dc help${COL_RESET}                     ヘルプの表示\n"
+    commands="$commands ${COL_GREEN}  bash ./dc links${COL_RESET}                    各サービスのLINKを表示\n"
+    commands="$commands ${COL_GREEN}  bash ./dc exec${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}           docker compose execの実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc up${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}             コンテナの起動（オプション --build）\n"
+    commands="$commands ${COL_GREEN}  bash ./dc stop${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}           コンテナの停止\n"
+    commands="$commands ${COL_GREEN}  bash ./dc restart${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}        コンテナの再起動\n"
+    commands="$commands ${COL_GREEN}  bash ./dc down${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}           Docker Composeで作ったコンテナを停止し、コンテナとネットワークを削除\n"
+    commands="$commands ${COL_GREEN}  bash ./dc destroy${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}        Docker Compose で作ったコンテナ、イメージ、ボリューム、ネットワークを一括完全消去\n"
+    commands="$commands ${COL_GREEN}  bash ./dc build${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}          Dockerイメージの構築（オプション --no-cache）\n"
+    commands="$commands ${COL_GREEN}  bash ./dc php${COL_RESET} ${COL_YELLOW}<file>${COL_RESET}               コンテナ内で PHP を実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc composer${COL_RESET} ${COL_YELLOW}<cmd>${COL_RESET}           コンテナ内で Composer コマンドを実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc artisan${COL_RESET} ${COL_YELLOW}<cmd>${COL_RESET}            コンテナ内で artisan コマンドを実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc tinker${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}         コンテナ内で artisan tinker コマンドを実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc test${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}           コンテナ内で artisan test コマンドを実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc pint${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}           コンテナ内で ./vendor/bin/pint コマンドを実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc stan${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}           コンテナ内で ./vendor/bin/phpstan analyse コマンドを実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc rector${COL_RESET} ${COL_YELLOW}<options>${COL_RESET}         コンテナ内で ./vendor/bin/rector コマンドを実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc rector-dry-run${COL_RESET} ${COL_YELLOW}<options>${COL_RESET} コンテナ内で ./vendor/bin/rector コマンドを実行（ドライラン）\n"
+    commands="$commands ${COL_GREEN}  bash ./dc npm${COL_RESET} ${COL_YELLOW}<cmd>${COL_RESET}                コンテナ内で npm コマンド実行\n"
+    commands="$commands ${COL_GREEN}  bash ./dc shell${COL_RESET}                    WEBコンテナ内に shell ログイン\n"
+    commands="$commands ${COL_GREEN}  bash ./dc root-shell${COL_RESET}               WEBコンテナ内に root ユーザーで shell ログイン\n"
+    commands="$commands ${COL_GREEN}  bash ./dc mysql${COL_RESET}                    MySQLコンテナの MySQL にログイン\n"
 
     printf "\n"
     printf "$commands\n"
@@ -245,6 +247,30 @@ if [ $# -gt 0 ]; then
                 -u "$CONTAINER_APP_USER" \
                 "$CONTAINER_APP" \
                 ./vendor/bin/phpstan analyse "$@"
+        else
+            container_is_not_running
+        fi
+
+    # rector
+    elif [ "$1" == "rector" ]; then
+        shift 1
+        if [ "$EXEC" == "yes" ]; then
+            docker-compose exec \
+                -u "$CONTAINER_APP_USER" \
+                "$CONTAINER_APP" \
+                ./vendor/bin/rector process "$@"
+        else
+            container_is_not_running
+        fi
+
+    # rector-dry-run
+    elif [ "$1" == "rector-dry-run" ]; then
+        shift 1
+        if [ "$EXEC" == "yes" ]; then
+            docker-compose exec \
+                -u "$CONTAINER_APP_USER" \
+                "$CONTAINER_APP" \
+                ./vendor/bin/rector process --dry-run "$@"
         else
             container_is_not_running
         fi
